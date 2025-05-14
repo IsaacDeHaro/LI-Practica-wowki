@@ -258,10 +258,10 @@ class SSD1306_I2C(SSD1306):
 
 ### Resultado
 
-## API GPT
-### Codigo
-```
 
-```
+https://github.com/user-attachments/assets/67afcf6a-2459-4816-bd81-fe892ba2b648
 
-### Resultado
+
+
+### Proyecto Wowki
+https://wokwi.com/projects/430969448364259329
