@@ -6,23 +6,111 @@
 from machine import Pin, I2C
 from ssd1306 import SSD1306_I2C
 import time
+import sys
 
-# Inicializa I2C y la pantalla OLED
+# Inicializar pantalla OLED
 i2c = I2C(0, scl=Pin(1), sda=Pin(0))
 oled = SSD1306_I2C(128, 64, i2c)
 
-def mostrar_clima(nombre, dibujo_func):
-    oled.fill(0)
-    dibujo_func()
-    oled.text(nombre, 0, 54)
-    oled.show()
+# Base de datos de países y climas
+base_datos_paises = {
+    "Peru": "Nublado",
+    "Argentina": "Soleado",
+    "Chile": "Lluvia",
+    "Colombia": "Tormenta",
+    "Brasil": "Nieve",
+    "Mexico": "Soleado",
+    "Canada": "Lluvia",
+    "Estados Unidos": "Tormenta",
+    "Francia": "Nublado",
+    "Espana": "Soleado",
+    "Alemania": "Nublado",
+    "Italia": "Soleado",
+    "Reino Unido": "Lluvia",
+    "Australia": "Soleado",
+    "Japon": "Tormenta",
+    "China": "Nublado",
+    "India": "Soleado",
+    "Sudafrica": "Lluvia",
+    "Rusia": "Nieve",
+    "Egipto": "Soleado",
+    "Nigeria": "Tormenta",
+    "Vietnam": "Lluvia",
+    "Tailandia": "Soleado",
+    "Indonesia": "Nublado",
+    "Corea del Sur": "Lluvia",
+    "Pakistan": "Tormenta",
+    "Bangladesh": "Soleado",
+    "Filipinas": "Nieve",
+    "Arabia Saudita": "Soleado",
+    "Irak": "Lluvia",
+    "Turquia": "Nublado",
+    "Israel": "Soleado",
+    "Malasia": "Lluvia",
+    "Singapur": "Soleado",
+    "Nueva Zelanda": "Nublado",
+    "Uruguay": "Soleado",
+    "Paraguay": "Tormenta",
+    "Afganistan": "Soleado", "Albania": "Lluvia", "Andorra": "Soleado", "Angola": "Tormenta",
+    "Antigua y Barbuda": "Nieve", "Argelia": "Lluvia", "Armenia": "Tormenta",
+    "Austria": "Nublado", "Azerbaiyan": "Lluvia", "Bahamas": "Soleado",
+    "Barbados": "Tormenta", "Barein": "Lluvia", "Belgica": "Nublado", "Belice": "Soleado", "Benin": "Lluvia", 
+    "Bhutan": "Tormenta", "Bielorrusia": "Lluvia", "Birmania": "Soleado", "Bolivia": "Nieve", "Bosnia y Herzegovina": "Nublado",
+    "Botsuana": "Soleado", "Brunei": "Lluvia", "Bulgaria": "Tormenta", "Burkina Faso": "Soleado",
+    "Burundi": "Soleado", "Butan": "Lluvia", "Cabo Verde": "Tormenta", "Camboya": "Soleado", "Camerun": "Soleado",
+    "Catar": "Nublado", "Chad": "Tormenta", "Chipre": "Soleado",
+    "Comoras": "Soleado", "Congo": "Soleado", "Corea del Norte": "Nieve",
+    "Costa Rica": "Soleado", "Croacia": "Soleado", "Cuba": "Tormenta",
+    "Curazao": "Nieve", "Dinamarca": "Nublado", "Dominica": "Lluvia", "Ecuador": "Lluvia",
+    "El Salvador": "Tormenta", "Emiratos Arabes Unidos": "Soleado", "Eritrea": "Lluvia",
+    "Eslovaquia": "Soleado", "Eslovenia": "Lluvia", "Estonia": "Lluvia",
+    "Esuatini": "Tormenta", "Etiopia": "Soleado", "Fiyi": "Nublado",
+    "Finlandia": "Nublado", "Gabon": "Lluvia", "Gambia": "Tormenta",
+    "Georgia": "Soleado", "Ghana": "Lluvia", "Granada": "Soleado",
+    "Guatemala": "Tormenta", "Guinea": "Nublado", "Guyana": "Soleado",
+    "Haiti": "Tormenta", "Honduras": "Nublado", "Hungria": "Lluvia",
+    "Iran": "Soleado", "Irlanda": "Lluvia", "Islandia": "Nieve",
+    "Islas Marshall": "Tormenta", "Islas Salomon": "Lluvia", "Islas Feroe": "Nublado",
+    "Jamaica": "Soleado", "Jordania": "Nublado", "Kazajistan": "Tormenta",
+    "Kenia": "Soleado", "Kirguistan": "Nublado", "Kiribati": "Soleado",
+    "Kuwait": "Lluvia", "Laos": "Nublado", "Lesoto": "Tormenta",
+    "Letonia": "Soleado", "Libano": "Tormenta", "Liberia": "Nieve",
+    "Libia": "Soleado", "Liechtenstein": "Tormenta", "Lituania": "Lluvia",
+    "Luxemburgo": "Soleado", "Madagascar": "Tormenta", "Malaui": "Tormenta",
+    "Maldivas": "Nublado", "Mali": "Tormenta", "Malta": "Soleado",
+    "Marruecos": "Nublado", "Mauricio": "Tormenta", "Mauritania": "Soleado",
+    "Micronesia": "Lluvia", "Moldavia": "Nieve", "Monaco": "Soleado",
+    "Mongolia": "Nieve", "Mozambique": "Lluvia", "Namibia": "Nublado",
+    "Nauru": "Lluvia", "Nepal": "Nublado", "Nicaragua": "Lluvia",
+    "Niger": "Soleado", "Noruega": "Soleado", "Oman": "Lluvia",
+    "Palaos": "Lluvia", "Panama": "Soleado", "Papua Nueva Guinea": "Tormenta",
+    "Polonia": "Lluvia", "Portugal": "Soleado", "Ruanda": "Lluvia",
+    "Rumania": "Nublado", "Samoa": "Lluvia", "San Cristobal y Nieves": "Nublado",
+    "San Marino": "Soleado", "Santa Lucia": "Tormenta", "Santo Tome y Principe": "Soleado",
+    "Senegal": "Tormenta", "Serbia": "Soleado", "Seychelles": "Soleado",
+    "Sierra Leona": "Tormenta", "Siria": "Tormenta", "Somalia": "Tormenta",
+    "Sri Lanka": "Soleado", "Suazilandia": "Soleado", "Sudan": "Lluvia",
+    "Sudan del Sur": "Tormenta", "Suecia": "Lluvia", "Suiza": "Nublado",
+    "Surinam": "Soleado", "Tayikistan": "Nublado", "Timor Oriental": "Soleado",
+    "Togo": "Tormenta", "Tonga": "Soleado", "Trinidad y Tobago": "Tormenta",
+    "Tunez": "Soleado", "Turkmenistan": "Tormenta", "Tuvalu": "Nublado",
+    "Ucrania": "Tormenta", "Uganda": "Soleado", "Uzbekistan": "Lluvia",
+    "Vanuatu": "Soleado", "Vaticano": "Soleado", "Venezuela": "Tormenta",
+    "Yemen": "Soleado", "Yibuti": "Tormenta", "Zambia": "Soleado",
+    "Zimbabue": "Nublado"
+}
 
-# --------- Íconos ---------
 
+
+# Función para capitalizar manualmente la primera letra de cada palabra
+def capitalize_string(input_string):
+    words = input_string.split()  # Divide la entrada en palabras
+    capitalized_words = [word[0].upper() + word[1:].lower() if word else '' for word in words]  # Capitaliza la primera letra de cada palabra
+    return ' '.join(capitalized_words)  # Une las palabras de nuevo en una cadena
+
+# -------- Íconos --------
 def icono_sol():
-    # Sol cuadrado con rayos
-    oled.fill_rect(60, 20, 8, 8, 1)  # Centro
-    # Rayos
+    oled.fill_rect(60, 20, 8, 8, 1)
     oled.line(64, 10, 64, 18, 1)
     oled.line(64, 28, 64, 36, 1)
     oled.line(54, 24, 59, 24, 1)
@@ -33,17 +121,16 @@ def icono_sol():
     oled.pixel(70, 30, 1)
 
 def icono_nublado():
-    oled.fill_rect(50, 24, 28, 12, 1)  # Nube principal
-    oled.fill_rect(56, 20, 20, 6, 1)   # Parte superior
+    oled.fill_rect(50, 24, 28, 12, 1)
+    oled.fill_rect(56, 20, 20, 6, 1)
 
 def icono_lluvia():
     icono_nublado()
     for x in range(55, 80, 6):
-        oled.line(x, 36, x-1, 44, 1)  # Gotas diagonales
+        oled.line(x, 36, x-1, 44, 1)
 
 def icono_tormenta():
     icono_nublado()
-    # Rayo
     oled.line(62, 36, 58, 44, 1)
     oled.line(58, 44, 66, 44, 1)
     oled.line(66, 44, 62, 52, 1)
@@ -53,20 +140,44 @@ def icono_nieve():
     for x in range(54, 78, 8):
         oled.text("*", x, 40, 1)
 
-# --------- Lista de climas ---------
-climas = [
-    ("Soleado", icono_sol),
-    ("Nublado", icono_nublado),
-    ("Lluvia", icono_lluvia),
-    ("Tormenta", icono_tormenta),
-    ("Nieve", icono_nieve)
-]
+# Asociación clima → ícono
+iconos_clima = {
+    "Soleado": icono_sol,
+    "Nublado": icono_nublado,
+    "Lluvia": icono_lluvia,
+    "Tormenta": icono_tormenta,
+    "Nieve": icono_nieve
+}
 
-# --------- Bucle principal ---------
+# Mostrar clima en pantalla
+def mostrar_pais_clima(pais, clima):
+    oled.fill(0)
+    iconos_clima[clima]()
+    oled.text(pais, 0, 0)
+    oled.text(clima, 0, 54)
+    oled.show()
+
+# Mostrar error
+def mostrar_error(pais):
+    oled.fill(0)
+    oled.text("Pais no", 10, 20)
+    oled.text("encontrado:", 0, 32)
+    oled.text(pais, 0, 48)
+    oled.show()
+
+# Bucle principal de entrada serial
 while True:
-    for nombre, dibujo in climas:
-        mostrar_clima(nombre, dibujo)
-        time.sleep(2)
+    sys.stdout.write("Ingresa un país: ")
+    entrada = sys.stdin.readline().strip()  # Lee la entrada sin title()
+    entrada = capitalize_string(entrada)  # Capitaliza la entrada correctamente
+
+    if entrada in base_datos_paises:
+        clima = base_datos_paises[entrada]
+        mostrar_pais_clima(entrada, clima)
+    else:
+        mostrar_error(entrada)
+
+    time.sleep(3)
 ```
 
 #### OLED
